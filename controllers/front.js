@@ -55,6 +55,7 @@ const saveAppointment = async (req, res) => {
     )
     let patientId = 0
     const source = 'web'
+    // Get patient ID
     if (userExist.rows.length) {
       patientId = userExist.rows[0].id
     } else {
@@ -75,6 +76,7 @@ const saveAppointment = async (req, res) => {
       }
     }
 
+    // Save Appointment Data
     const appointment =
       await db.query(`INSERT INTO appointments (patientId, serviceId, doctorId, appointmentDate, description) VALUES (
       '${patientId}',
@@ -86,21 +88,24 @@ const saveAppointment = async (req, res) => {
     if (!appointment.rows.length) {
       return res.status(200).json({ error: 'Error saving appointment data.' })
     }
-    res.status(201).json({ message: 'Appointment saved successfully' })
+    res.status(201).json({ message: 'Appointment request saved successfully' })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
 }
 
-const ticketList = async (req, res) => {
+const dashboard = async (req, res) => {
   try {
-    const tickets = await Ticket.find({
-      customerId: req.loggedUser.user._id
-    }).populate('companyId departmentId')
-    if (!tickets) {
-      return res.status(200).json({ error: 'Bad request.' })
+    const appointments =
+      await db.query(`SELECT a.id id, a.appointmentdate date, a.status status, s.title service, u.name doctor FROM appointments a
+      JOIN services s ON s.id = a.serviceid
+      JOIN users u ON u.id = a.doctorid
+      WHERE a.status !='rejected'
+      AND a.patientId = ${req.loggedUser.user.id}`)
+    if (!appointments.rows.length) {
+      return res.status(200).json({ error: 'No appointments for this user!' })
     }
-    res.status(200).json(tickets)
+    res.status(200).json(appointments.rows)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -108,19 +113,60 @@ const ticketList = async (req, res) => {
 
 const show = async (req, res) => {
   try {
-    const ticket = await Ticket.find({
-      _id: req.params.id
-      // customerId: req.loggedUser.user._id
-    }).populate('companyId departmentId customerId issuerId')
-    if (!ticket) {
+    const appointment =
+      await db.query(`SELECT a.id id, a.appointmentdate date, a.status status, s.title service, u.name doctor FROM appointments a
+      JOIN services s ON s.id = a.serviceid
+      JOIN users u ON u.id = a.doctorid
+      WHERE a.status !='rejected'
+      AND a.patientId = ${req.loggedUser.user.id}
+      AND a.id = ${req.params.id}`)
+    if (!appointment.rows.length) {
       return res.status(200).json({ error: 'Bad request.' })
     }
-    const threads = await Thread.find({ ticketId: req.params.id })
-      .sort({
-        createdAt: 1
-      })
-      .populate('issuerId')
-    res.status(200).json({ ticket, threads })
+    const appid = appointment.rows[0].id
+    let medications = []
+    let labs = []
+    let invoice = []
+    let prescription = []
+    if (
+      appointment.rows[0].status === 'complete' ||
+      appointment.rows[0].status === 'invoiced'
+    ) {
+      const lab =
+        await db.query(`SELECT lr.id id, lr.resultPath result, lr.status status, lt.title title FROM labRequests lr
+        JOIN labTests lt ON lt.id = lr.diagnosticId
+        WHERE lr.status !='rejected'
+        AND lr.appointmentId = ${appid}`)
+      labs = lab.rows
+
+      const med =
+        await db.query(`SELECT mr.id id, mr.period period, mr.dosage dosage, md.name title FROM medicinesRequests mr
+        JOIN medicines md ON md.id = mr.medicineId
+        WHERE mr.status !='rejected'
+        AND mr.appointmentId = ${appid}`)
+      medications = med.rows
+
+      const inv = await db.query(
+        `SELECT id, amount, status FROM invoices WHERE appointmentId = ${appid}`
+      )
+      invoice = inv.rows
+
+      const pres =
+        await db.query(`SELECT p.casehistory, p.medication, i.name icdname, i.code icdcode FROM prescriptions p
+        JOIN icd i ON i.id=p.icdid
+        WHERE appointmentId = ${appid}`)
+      if (pres) {
+        prescription = pres.rows
+      }
+    }
+
+    res.status(200).json({
+      appointments: appointment.rows[0],
+      medications,
+      labs,
+      invoice,
+      prescription
+    })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -239,7 +285,7 @@ const companyDepartments = async (req, res) => {
 module.exports = {
   contactUs,
   saveAppointment,
-  ticketList,
+  dashboard,
   show,
   register,
   addThread,

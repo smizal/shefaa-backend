@@ -2,7 +2,7 @@ const express = require('express')
 const {
   contactUs,
   saveAppointment,
-  ticketList,
+  dashboard,
   show,
   register,
   addThread,
@@ -16,11 +16,11 @@ const router = express.Router()
 
 router.post('/contact-us', contactUs)
 router.post('/get_appointment', saveAppointment)
-router.get('/tickets-list', verifyToken, ticketList)
+router.get('/patient', verifyToken, dashboard)
+router.get('/patient/:id', verifyToken, show)
 router.post('/register-company', register)
 router.get('/companies-list', companiesList)
 router.get('/departments-list/:id', companyDepartments)
 router.post('/add-thread/:id', verifyToken, addThread)
-router.get('/tickets-show/:id', verifyToken, show)
 
 module.exports = router
