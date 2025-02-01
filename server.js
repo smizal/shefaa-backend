@@ -27,10 +27,13 @@ app.use(cors())
 const { verifyToken } = require('./middleware/jwtUtils')
 const authRoutes = require('./routes/auth.js')
 const frontRoutes = require('./routes/front.js')
+const adminRoutes = require('./routes/admin.js')
+const profileRoutes = require('./routes/profile.js')
 
 // Proper Routes use
 app.use('/auth', authRoutes)
-// app.use('/admin', verifyToken, adminRoute)
+app.use('/admin', verifyToken, adminRoutes)
+app.use('/profile', verifyToken, profileRoutes)
 app.use('/', frontRoutes)
 
 app.listen(PORT, () => {
