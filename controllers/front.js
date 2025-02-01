@@ -172,113 +172,47 @@ const show = async (req, res) => {
   }
 }
 
-const register = async (req, res) => {
+const medicines = async (req, res) => {
   try {
-    const postData = req.body
-    if (
-      !postData.companyName ||
-      !postData.companyPhone ||
-      !postData.companyEmail ||
-      !postData.companyCr ||
-      !postData.address ||
-      !postData.adminName ||
-      !postData.adminEmail ||
-      !postData.adminPhone ||
-      !postData.username ||
-      !postData.password ||
-      !postData.cpr
-    ) {
-      return res.status(200).json({ error: 'Missing required fields.' })
-    }
+    const appid = req.params.id
+    const medications =
+      await db.query(`SELECT mr.id id, mr.period period, mr.dosage dosage, md.name title FROM medicinesRequests mr
+        JOIN medicines md ON md.id = mr.medicineId
+        JOIN appointments a ON a.id = mr.appointmentId
+        WHERE mr.status !='rejected'
+        AND a.patientId = ${req.loggedUser.user.id}
+        AND mr.appointmentId = ${appid}`)
 
-    const companyExist = await Company.findOne({ cr: postData.companyCr })
-    if (companyExist) {
-      return res.status(200).json({ error: 'Company already registered.' })
-    }
-
-    const usernameExist = await User.findOne({ cpr: postData.cpr })
-    if (usernameExist && usernameExist.companyId) {
+    if (!medications.rows.length) {
       return res
         .status(200)
-        .json({ error: 'Username already registered with other company.' })
+        .json({ error: 'No medication for this appointment.' })
     }
-
-    const newCompany = {
-      name: postData.companyName,
-      phone: postData.companyPhone,
-      email: postData.companyEmail,
-      address: postData.address,
-      cr: postData.companyCr,
-      photo: postData.photo
-    }
-    const company = await Company.create(newCompany)
-
-    const hashedPassword = bcrypt.hashSync(postData.password, SALT)
-    const newUser = {
-      name: postData.adminName,
-      username: postData.username,
-      password: hashedPassword,
-      phone: postData.adminPhone,
-      cpr: postData.cpr,
-      email: postData.adminEmail,
-      role: 'admin',
-      status: 'pending',
-      companyId: company._id
-    }
-    const user = await User.create(newUser)
-
-    res.status(200).json({ company, user })
+    medications = medications.rows
+    res.status(200).json({ medications })
   } catch (error) {
     res.status(400).json({ error: error.message })
   }
 }
 
-const addThread = async (req, res) => {
+const showInvoice = async (req, res) => {
   try {
-    const ticket = await Ticket.find({
-      _id: req.params.id,
-      customerId: req.loggedUser.user._id
-    })
+    const appid = req.params.id
+    const inv = await db.query(
+      `SELECT i.id, i.amount, i.status, i.data, u.name FROM invoices i
+      JOIN appointments a ON a.id = i.appointmentId
+      JOIN users u on u.id = i.issuerid
+      WHERE appointmentId = ${appid}
+      AND a.patientId = ${req.loggedUser.user.id}`
+    )
 
-    if (!ticket) {
-      return res.status(200).json({ error: 'Bad request.' })
+    if (!inv.rows.length) {
+      return res.status(200).json({ error: 'No invoice for this appointment.' })
     }
-
-    await Ticket.findByIdAndUpdate(req.params.id, {
-      status: req.body.ticketStatus
-    })
-    req.body.ticketId = req.params.id
-    req.body.issuerId = req.loggedUser.user._id
-    req.body.status = 'active'
-
-    const thread = Thread.create(req.body)
-    res.status(200).json(thread)
+    invoice = inv.rows
+    res.status(200).json({ invoice })
   } catch (error) {
-    res.status(500).json({ error: error.message })
-  }
-}
-
-const companiesList = async (req, res) => {
-  try {
-    const companies = await Company.find({})
-    if (!companies) {
-      return res.status(200).json({ error: 'Bad request.' })
-    }
-    res.status(200).json(companies)
-  } catch (error) {
-    res.status(500).json({ error: error.message })
-  }
-}
-
-const companyDepartments = async (req, res) => {
-  try {
-    const departments = await Department.find({ companyId: req.params.id })
-    if (!departments) {
-      return res.status(200).json({ error: 'Bad request.' })
-    }
-    res.status(200).json(departments)
-  } catch (error) {
-    res.status(500).json({ error: error.message })
+    res.status(400).json({ error: error.message })
   }
 }
 
@@ -287,8 +221,6 @@ module.exports = {
   saveAppointment,
   dashboard,
   show,
-  register,
-  addThread,
-  companiesList,
-  companyDepartments
+  medicines,
+  showInvoice
 }

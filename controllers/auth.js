@@ -38,7 +38,6 @@ const login = async (req, res) => {
       const user = await db.query(
         `SELECT id, name, role, phone, email, password, status FROM users WHERE username='${username}'`
       )
-      console.log(user)
       if (!user.rows.length) {
         return res
           .status(200)
