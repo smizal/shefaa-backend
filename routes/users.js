@@ -10,7 +10,8 @@ const {
   show,
   create,
   update,
-  deleting
+  deleting,
+  byTypeList
 } = require('../controllers/users.js')
 
 const router = express.Router()
@@ -20,5 +21,6 @@ router.get('/:id', show)
 router.post('/', upload.single('photo'), create)
 router.put('/:id', upload.single('photo'), update)
 router.delete('/:id', deleting)
+router.get('/type/:name', byTypeList)
 
 module.exports = router

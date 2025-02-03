@@ -278,4 +278,18 @@ const deleting = async (req, res) => {
   }
 }
 
-module.exports = { index, show, create, update, deleting }
+const byTypeList = async (req, res) => {
+  try {
+    const users = await db.query(
+      `SELECT id, name, photopath, cpr, email, phone, role, status FROM users WHERE role='${req.params.name}'`
+    )
+    if (!users.rows.length) {
+      return res.status(404).json({ error: 'Bad request.' })
+    }
+    res.status(200).json(users.rows)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+module.exports = { index, show, create, update, deleting, byTypeList }
