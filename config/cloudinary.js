@@ -13,8 +13,6 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: (req, file) => {
-      console.log('req.url: ', req.url)
-
       let distFolder = 'shefaa'
       if (req.url.startsWith('/users')) {
         distFolder += '/users'

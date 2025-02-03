@@ -1,24 +1,41 @@
-const User = require('../models/usersModel')
-const Ticket = require('../models/ticketsModel')
-const Department = require('../models/departmentsModel')
-
+const db = require('../config/db')
 const bcrypt = require('bcrypt')
 const SALT = process.env.SALT ? +process.env.SALT : 12
+const { cloudinary } = require('../config/cloudinary')
 
 const index = async (req, res) => {
   try {
-    let users = ''
-    if (req.loggedUser.user.role === 'super') {
-      users = await User.find().populate('companyId departmentId')
-    } else {
-      users = await User.find({
-        companyId: req.loggedUser.user.companyId
-      }).populate('companyId departmentId')
+    if (!db.checkPermission(req.loggedUser.user.role, ['admin'])) {
+      res
+        .status(200)
+        .json({ error: 'You are not authorized to get in this page' })
     }
-    if (!users) {
+    const users = await db.query(
+      `SELECT id, name, photopath, cpr, email, phone, role, status FROM users`
+    )
+    if (!users.rows.length) {
       return res.status(404).json({ error: 'Bad request.' })
     }
-    res.status(200).json(users)
+    res.status(200).json(users.rows)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+const show = async (req, res) => {
+  try {
+    if (!db.checkPermission(req.loggedUser.user.role, ['admin'])) {
+      res
+        .status(200)
+        .json({ error: 'You are not authorized to get in this page' })
+    }
+    const users = await db.query(
+      `SELECT id, name, photopath, cpr, username, email, phone, role, status, notes FROM users WHERE id=${req.params.id}`
+    )
+    if (!users.rows.length) {
+      return res.status(404).json({ error: 'Bad request.' })
+    }
+    res.status(200).json(users.rows)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -26,8 +43,10 @@ const index = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    if (req.loggedUser.user.role != 'super') {
-      req.body.companyId = req.loggedUser.user.companyId
+    if (!db.checkPermission(req.loggedUser.user.role, ['admin'])) {
+      res
+        .status(200)
+        .json({ error: 'You are not authorized to get in this page' })
     }
 
     const newUser = req.body
@@ -36,83 +55,61 @@ const create = async (req, res) => {
       !newUser.username ||
       !newUser.password ||
       !newUser.cpr ||
-      !newUser.role ||
-      (newUser.role === 'staff' && !newUser.departmentId)
+      !newUser.email ||
+      !newUser.role
     ) {
       return res.status(200).json({ error: 'Missing required fields.' })
     }
 
+    // check password match
     if (newUser.password !== newUser.confirmPassword) {
       return res.status(200).json({ error: 'Passwords are not matched.' })
     }
-    const usernameExist = await User.findOne({ username: newUser.username })
-    if (usernameExist) {
+    // check username
+    const usernameExist = await db.query(
+      `SELECT id FROM users WHERE username='${newUser.username}'`
+    )
+    if (usernameExist.rows.length) {
       return res.status(409).json({ error: 'Username already taken.' })
     }
 
-    const userCPRExist = await User.findOne({ cpr: newUser.cpr })
-    if (userCPRExist) {
+    // check cpr
+    const userCPRExist = await db.query(
+      `SELECT id FROM users WHERE cpr='${newUser.cpr}'`
+    )
+    if (userCPRExist.rows.length) {
       return res
         .status(409)
         .json({ error: 'A User with same CPR already created.' })
     }
 
-    const department = await Department.find({ companyId: newUser.companyId })
-    if (!department) {
-      return res
-        .status(409)
-        .json({ error: 'Department is not founded for this company' })
-    }
-
-    req.body.password = bcrypt.hashSync(newUser.password, +SALT)
-
-    const user = await User.create(req.body)
-    console.log(user)
-
-    if (!user) {
-      return res.status(200).json({ error: 'Error saving data.' })
-    }
-    res.status(201).json(user)
-  } catch (error) {
-    res.status(500).json({ error: error.message })
-  }
-}
-
-const companyUsers = async (req, res) => {
-  try {
-    let company = req.loggedUser.user.companyId
-    if (req.loggedUser.user.role === 'super') {
-      company = req.params.id
-    }
-    const users = await User.find({ companyId: company }).populate(
-      'companyId departmentId'
-    )
-    if (!users) {
-      return res.status(404).json({ error: 'Bad request.' })
-    }
-    res.status(200).json(users)
-  } catch (error) {
-    res.status(500).json({ error: error.message })
-  }
-}
-
-const show = async (req, res) => {
-  try {
-    let user = ''
-    if (req.loggedUser.user.role === 'super') {
-      user = await User.findById(req.params.id).populate(
-        'companyId departmentId'
-      )
+    // encode password and save user data
+    newUser.password = bcrypt.hashSync(newUser.password, SALT)
+    if (req.file) {
+      newUser.photopath = req.file.path
+      newUser.photoId = req.file.filename
     } else {
-      user = await User.find({
-        _id: req.params.id,
-        companyId: req.loggedUser.user.companyId
-      }).populate('companyId departmentId')
+      newUser.photopath = ''
+      newUser.photoId = ''
     }
-    if (!user) {
-      return res.status(404).json({ error: 'Bad request.' })
+    const user =
+      await db.query(`INSERT INTO users (name, photopath, photoid, cpr, username, password, email, phone, notes, role) VALUES (
+          '${newUser.name}',
+          '${newUser.photopath}',
+          '${newUser.photoId}',
+          '${newUser.cpr}',
+          '${newUser.username}',
+          '${newUser.password}',
+          '${newUser.email}',
+          '${newUser.phone}',
+          '${newUser.notes}',
+          '${newUser.role}'
+          ) RETURNING id, name, photopath, cpr, username, email, phone, role, status, notes`)
+    if (user.rows.length) {
+      res.status(201).json(user.rows[0])
+    } else {
+      res.status(200).json({ error: 'Error saving user data' })
     }
-    res.status(200).json(user)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -199,4 +196,4 @@ const deleting = async (req, res) => {
   }
 }
 
-module.exports = { index, create, companyUsers, show, update, deleting }
+module.exports = { index, show, create, update, deleting }

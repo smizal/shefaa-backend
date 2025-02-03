@@ -1,5 +1,4 @@
 require('dotenv').config()
-const { cloudinary, storage } = require('../config/cloudinary')
 const db = require('../config/db')
 const { sendEmail } = require('../config/email')
 const bcrypt = require('bcrypt')

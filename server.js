@@ -28,12 +28,14 @@ const { verifyToken } = require('./middleware/jwtUtils')
 const authRoutes = require('./routes/auth.js')
 const frontRoutes = require('./routes/front.js')
 const adminRoutes = require('./routes/admin.js')
+const userRoutes = require('./routes/users.js')
 const profileRoutes = require('./routes/profile.js')
 
 // Proper Routes use
 app.use('/auth', authRoutes)
 app.use('/admin', verifyToken, adminRoutes)
 app.use('/profile', verifyToken, profileRoutes)
+app.use('/users', verifyToken, userRoutes)
 app.use('/', frontRoutes)
 
 app.listen(PORT, () => {
