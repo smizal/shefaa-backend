@@ -9,11 +9,6 @@ const pool = new Pool({
   database: process.env.DB_NAME
 })
 
-const checkPermission = (userRole, roles) => {
-  return roles.includes(userRole)
-}
-
 module.exports = {
-  query: (text, params) => pool.query(text, params),
-  checkPermission
+  query: (text, params) => pool.query(text, params)
 }
