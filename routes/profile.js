@@ -2,7 +2,6 @@ const express = require('express')
 
 const { storage } = require('../config/cloudinary')
 storage.params.folder = 'shefaa/users'
-console.log(storage)
 
 const multer = require('multer')
 const upload = multer({ storage })
