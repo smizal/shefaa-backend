@@ -29,6 +29,7 @@ const authRoutes = require('./routes/auth.js')
 const frontRoutes = require('./routes/front.js')
 const adminRoutes = require('./routes/admin.js')
 const userRoutes = require('./routes/users.js')
+const doctorRoutes = require('./routes/doctors.js')
 const profileRoutes = require('./routes/profile.js')
 const { isAuthorized } = require('./middleware/permission.js')
 
@@ -37,6 +38,7 @@ app.use('/auth', authRoutes)
 app.use('/admin', verifyToken, adminRoutes)
 app.use('/profile', verifyToken, profileRoutes)
 app.use('/users', verifyToken, isAuthorized(['admin']), userRoutes)
+app.use('/doctors', verifyToken, isAuthorized(['admin']), doctorRoutes)
 app.use('/', frontRoutes)
 
 app.listen(PORT, () => {
