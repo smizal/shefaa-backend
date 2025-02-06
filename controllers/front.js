@@ -215,11 +215,37 @@ const showInvoice = async (req, res) => {
   }
 }
 
+const getServices = async (req, res) => {
+  try {
+    const services = await db.query(
+      `SELECT id, title FROM services WHERE status='active'`
+    )
+    res.status(400).json(services.rows)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+}
+
+const getDoctors = async (req, res) => {
+  try {
+    const doctors = await db.query(
+      `SELECT u.id, u.name FROM users u
+      JOIN doctorsServices ds ON u.id=ds.doctorId
+      WHERE u.status='active' AND ds.status='active' AND u.role='doctor' AND ds.serviceId='${req.params.srvId}'`
+    )
+    res.status(400).json(doctors.rows)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+}
+
 module.exports = {
   contactUs,
   saveAppointment,
   dashboard,
   show,
   medicines,
-  showInvoice
+  showInvoice,
+  getServices,
+  getDoctors
 }
