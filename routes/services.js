@@ -1,9 +1,4 @@
 const express = require('express')
-const { storage } = require('../config/cloudinary')
-storage.params.folder = 'shefaa/users'
-
-const multer = require('multer')
-const upload = multer({ storage })
 
 const {
   index,
@@ -11,18 +6,22 @@ const {
   create,
   update,
   deleting,
-  byTypeList
-} = require('../controllers/users.js')
+  addDoctor,
+  deleteDoctor,
+  getOtherDoctors
+} = require('../controllers/services.js')
 const { error404 } = require('../controllers/error.js')
 
 const router = express.Router()
 
 router.get('/', index)
 router.get('/:id', show)
-router.post('/', upload.single('photo'), create)
-router.put('/:id', upload.single('photo'), update)
+router.get('/otherDoctors/:id', getOtherDoctors)
+router.post('/', create)
+router.post('/:id', addDoctor)
+router.put('/:id', update)
 router.delete('/:id', deleting)
-router.get('/type/:name', byTypeList)
+router.delete('/:id/docId', deleteDoctor)
 router.get('*', error404)
 router.post('*', error404)
 router.put('*', error404)

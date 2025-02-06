@@ -39,13 +39,21 @@ const create = async (req, res) => {
     if (!newServices.services) {
       return res.status(200).json({ error: 'Missing required fields.' })
     }
+    let message = ''
 
-    newServices.services.forEach((srvId) => {
-      db.query(
-        `INSERT INTO doctorsServices (doctorid, serviceid) VALUES (${req.params.id},${srvId})`
+    await newServices.services.forEach(async (srvId) => {
+      const exist = await db.query(
+        `SELECT id FROM doctorsServices WHERE doctorid=${req.params.id} AND serviceid=${srvId}`
       )
-    })
 
+      if (exist.rows.length > 0) {
+        message = 'Some services are already attached to the doctor!'
+      } else {
+        await db.query(
+          `INSERT INTO doctorsServices (doctorid, serviceid) VALUES (${req.params.id},${srvId})`
+        )
+      }
+    })
     const docServices = await db.query(
       `SELECT ds.id, ds.status, s.title FROM doctorsServices ds 
       JOIN services s ON s.id = ds.serviceId
@@ -56,7 +64,7 @@ const create = async (req, res) => {
         .status(404)
         .json({ error: 'No attached services for this doctor.' })
     }
-    res.status(200).json(docServices.rows)
+    res.status(200).json({ docServices: docServices.rows, message })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
