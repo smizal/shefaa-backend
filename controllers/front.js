@@ -104,7 +104,8 @@ const dashboard = async (req, res) => {
     if (!appointments.rows.length) {
       return res.status(200).json({ error: 'No appointments for this user!' })
     }
-    res.status(200).json(appointments.rows)
+    message = 'Appointments fetched successfully'
+    res.status(200).json({ appointments: appointments.rows, message: message })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -159,12 +160,14 @@ const show = async (req, res) => {
       }
     }
 
+    message = 'Appointment data fetched successfully'
     res.status(200).json({
       appointments: appointment.rows[0],
       medications,
       labs,
       invoice,
-      prescription
+      prescription,
+      message
     })
   } catch (error) {
     res.status(500).json({ error: error.message })
@@ -187,8 +190,9 @@ const medicines = async (req, res) => {
         .status(200)
         .json({ error: 'No medication for this appointment.' })
     }
+    message = 'Medications fetched successfully'
     medications = medications.rows
-    res.status(200).json({ medications })
+    res.status(200).json({ medications, message })
   } catch (error) {
     res.status(400).json({ error: error.message })
   }
@@ -208,8 +212,9 @@ const showInvoice = async (req, res) => {
     if (!inv.rows.length) {
       return res.status(200).json({ error: 'No invoice for this appointment.' })
     }
+    message = 'Invoice fetched successfully'
     invoice = inv.rows
-    res.status(200).json({ invoice })
+    res.status(200).json({ invoice, message })
   } catch (error) {
     res.status(400).json({ error: error.message })
   }
@@ -220,7 +225,8 @@ const getServices = async (req, res) => {
     const services = await db.query(
       `SELECT id, title FROM services WHERE status='active'`
     )
-    res.status(400).json(services.rows)
+    message = 'Services fetched successfully'
+    res.status(400).json({ services: services.rows, message })
   } catch (error) {
     res.status(400).json({ error: error.message })
   }
@@ -233,7 +239,8 @@ const getDoctors = async (req, res) => {
       JOIN doctorsServices ds ON u.id=ds.doctorId
       WHERE u.status='active' AND ds.status='active' AND u.role='doctor' AND ds.serviceId='${req.params.srvId}'`
     )
-    res.status(400).json(doctors.rows)
+    message = 'Doctors fetched successfully'
+    res.status(400).json({ doctors: doctors.rows, message })
   } catch (error) {
     res.status(400).json({ error: error.message })
   }

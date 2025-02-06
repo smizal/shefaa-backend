@@ -11,8 +11,8 @@ const show = async (req, res) => {
     if (!foundedUser.rows.length) {
       return res.status(404).json({ error: 'Bad request.' })
     }
-    const user = foundedUser.rows
-    res.status(200).json(user)
+    const message = 'User data fetched successfully'
+    res.status(200).json({ user: foundedUser.rows[0], message: message })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -58,8 +58,8 @@ const update = async (req, res) => {
         console.log(result)
       })
     }
-    newUser = user.rows[0]
-    res.status(200).json(newUser)
+    const message = 'User updated successfully'
+    res.status(200).json({ user: user.rows[0], message: message })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }

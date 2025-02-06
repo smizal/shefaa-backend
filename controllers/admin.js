@@ -5,6 +5,7 @@ const index = async (req, res) => {
     const role = req.loggedUser.user.role
     let newApps = []
     let unpaidInvoices = []
+    message = 'Data fetched successfully'
     if (role === 'admin') {
       return res.status(200).json({ message: 'Admin Dashboard.' })
     } else if (role === 'doctor') {
@@ -18,7 +19,7 @@ const index = async (req, res) => {
         WHERE a.status ='inprogress' OR  a.status ='complete'`)
       newApps = newApps.rows.length ? newApps.rows : []
 
-      return res.status(200).json({ newApps })
+      return res.status(200).json({ newApps, message })
     } else if (role === 'pharmacist') {
       newApps =
         await db.query(`SELECT a.id, a.appointmentdate, u.name FROM appointments a 
@@ -26,7 +27,7 @@ const index = async (req, res) => {
         WHERE a.status ='inprogress'`)
       newApps = newApps.rows.length ? newApps.rows : []
 
-      return res.status(200).json({ apps })
+      return res.status(200).json({ apps, message })
     } else if (role === 'accountant') {
       newApps =
         await db.query(`SELECT a.id, a.appointmentdate, u.name FROM appointments a 
@@ -41,9 +42,9 @@ const index = async (req, res) => {
           WHERE i.status='new'`)
       unpaidInvoices = unpaidInvoices.rows.length ? unpaidInvoices.rows : []
 
-      return res.status(200).json({ newApps, unpaidInvoices })
+      return res.status(200).json({ newApps, unpaidInvoices, message })
     }
-    return res.status(404).json({ error: 'Bad request.' })
+    res.status(404).json({ error: 'Bad request.' })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }

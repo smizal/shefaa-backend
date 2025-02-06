@@ -11,7 +11,8 @@ const index = async (req, res) => {
     if (!users.rows.length) {
       return res.status(404).json({ error: 'Bad request.' })
     }
-    res.status(200).json(users.rows)
+    message = 'List of users fetched successfully'
+    res.status(200).json({ users: users.rows, message: message })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -19,13 +20,14 @@ const index = async (req, res) => {
 
 const show = async (req, res) => {
   try {
-    const users = await db.query(
+    const user = await db.query(
       `SELECT id, name, photopath, cpr, username, email, phone, role, status, notes FROM users WHERE id=${req.params.id}`
     )
-    if (!users.rows.length) {
+    if (!user.rows.length) {
       return res.status(404).json({ error: 'Bad request.' })
     }
-    res.status(200).json(users.rows)
+    message = 'User details fetched successfully'
+    res.status(200).json({ user: user.rows[0], message: message })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -64,7 +66,7 @@ const create = async (req, res) => {
     if (userCPRExist.rows.length) {
       return res
         .status(409)
-        .json({ error: 'A User with same CPR already created.' })
+        .json({ error: 'A user with same CPR already created.' })
     }
 
     // encode password and save user data
@@ -90,7 +92,8 @@ const create = async (req, res) => {
           '${newUser.role}'
           ) RETURNING id, name, photopath, cpr, username, email, phone, role, status, notes`)
     if (user.rows.length) {
-      res.status(201).json(user.rows[0])
+      message = 'User created successfully'
+      res.status(201).json({ user: user.rows[0], message: message })
     } else {
       res.status(200).json({ error: 'Error saving user data' })
     }
@@ -170,14 +173,18 @@ const update = async (req, res) => {
     const query = `UPDATE users SET name='${newUser.name}', cpr='${newUser.cpr}', username='${newUser.username}', email='${newUser.email}', phone='${newUser.phone}', role='${newUser.role}', notes='${newUser.notes}', updatedat='${updatedAt}'${newUser.password}${newUser.photoPath}${newUser.photoId} WHERE id=${req.params.id} RETURNING id, name, photopath, cpr, username, email, phone, role, status, notes`
     console.log(query)
 
+    let message = ''
+
     const user = await db.query(query)
     if (oldUser.rows[0].photoid && req.file) {
       cloudinary.uploader.destroy(oldUser.rows[0].photoid).then((result) => {
         console.log(result)
+        // message+= 'Old photo deleted successfully'
       })
     }
+    message = 'User updated successfully'
     if (user.rows.length) {
-      res.status(201).json(user.rows[0])
+      res.status(201).json({ user: user.rows[0], message: message })
     } else {
       res.status(200).json({ error: 'Error saving user data' })
     }
@@ -286,7 +293,8 @@ const byTypeList = async (req, res) => {
     if (!users.rows.length) {
       return res.status(404).json({ error: 'Bad request.' })
     }
-    res.status(200).json(users.rows)
+    message = 'List of users fetched successfully'
+    res.status(200).json({ users: users.rows, message: message })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
