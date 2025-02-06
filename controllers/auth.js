@@ -14,9 +14,9 @@ const signUp = async (req, res) => {
       const newUser = user.rows[0]
       const token = signToken(newUser)
       res.status(200).json({
-        newUser,
+        user: newUser,
         token,
-        message: 'You are authorized!'
+        message: 'You are registered and Logged-in successfuly'
       })
     } else {
       res.status(200).json({ error: 'Error saving user data' })
@@ -55,9 +55,9 @@ const login = async (req, res) => {
         delete foundedUser.status
         const token = signToken(foundedUser)
         res.status(200).json({
-          foundedUser,
+          user: foundedUser,
           token,
-          message: 'You are authorized!'
+          message: 'You are Logged-in successfuly'
         })
       } else {
         res
