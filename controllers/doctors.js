@@ -28,7 +28,7 @@ const show = async (req, res) => {
         .json({ error: 'No attached services for this doctor.' })
     }
     message = 'Doctor services fetched successfully'
-    res.status(200).json({ docServices: docServices.rows, message: message })
+    res.status(200).json({ docServices: docServices.rows[0], message: message })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
