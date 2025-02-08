@@ -19,13 +19,35 @@ router.get('/', isAuthorized(['admin', 'doctor', 'receptionist']), index)
 router.get('/range/:start', isAuthorized(['admin', 'receptionist']), index)
 router.get('/range/:start/:end', isAuthorized(['admin', 'receptionist']), index)
 
-router.get('/get_services', getServices)
-router.get('/get_doctors/:srvId', getDoctors)
-router.get('/docApp/:id', appByDoctor)
-router.get('/:id', show)
+router.get(
+  '/get_services',
+  isAuthorized(['admin', 'receptionist']),
+  getServices
+)
+router.get(
+  '/get_doctors/:srvId',
+  isAuthorized(['admin', 'receptionist']),
+  getDoctors
+)
+router.get(
+  '/docApp/:id',
+  isAuthorized(['admin', 'doctor', 'receptionist']),
+  appByDoctor
+)
+router.get(
+  '/docApp/:id/:start',
+  isAuthorized(['admin', 'doctor', 'receptionist']),
+  appByDoctor
+)
+router.get(
+  '/docApp/:id/:start/:end',
+  isAuthorized(['admin', 'doctor', 'receptionist']),
+  appByDoctor
+)
+router.get('/:id', isAuthorized(['admin', 'doctor', 'receptionist']), show)
 router.post('/', isAuthorized(['admin', 'receptionist']), create)
-router.put('/:id', update)
-router.delete('/:id', deleting)
+router.put('/:id', isAuthorized(['admin', 'receptionist']), update)
+router.delete('/:id', isAuthorized(['admin', 'receptionist']), deleting)
 
 router.get('*', error404)
 router.post('*', error404)
