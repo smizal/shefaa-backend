@@ -177,53 +177,27 @@ const update = async (req, res) => {
 
 const deleting = async (req, res) => {
   try {
-    srvId = req.params.id
-    console.log(srvId)
+    appId = req.params.id
 
-    const existService = await db.query(
-      `SELECT id FROM services where id=${srvId}`
+    const appExist = await db.query(
+      `SELECT status FROM appointments where id=${appId}`
     )
-    if (!existService.rows.length) {
+    if (!appExist.rows.length) {
       return res.status(401).json({ error: 'Invalid Data' })
     }
 
-    let fineToDelete = true
-    let message = ''
+    if (appExist.rows[0].status !== 'new') {
+      return res.status(401).json({
+        error: `Only new appointments can be deleted. this appointment status is ${appExist.rows[0].status}`
+      })
+    }
 
-    const appCount = await db.query(
-      `SELECT COUNT(id) FROM appointments WHERE serviceid=${srvId}`
+    const deletedApp = await db.query(
+      `DELETE FROM appointments WHERE id=${appId}`
     )
-    console.log(appCount)
-    if (appCount.rows[0].count > 0) {
-      fineToDelete = false
-      message = 'Service attached to registered appointments'
-    }
+    message = 'Appointment deleted successfully'
 
-    if (fineToDelete) {
-      const docSrvCount = await db.query(
-        `SELECT COUNT(id) FROM doctorsServices WHERE serviceid=${srvId}`
-      )
-      if (docSrvCount.rows[0].count > 0) {
-        fineToDelete = false
-        message = 'service has doctors attached'
-      }
-    }
-
-    let deletedSrv
-    if (fineToDelete) {
-      deletedSrv = await db.query(
-        `DELETE FROM services WHERE id=${srvId} RETURNING id, title, price, duration, description, status`
-      )
-      message = 'Service deleted successfully'
-    } else {
-      const updatedAt = new Date().toISOString()
-      deletedSrv = await db.query(
-        `UPDATE services SET status='suspended', updatedat='${updatedAt}' WHERE id=${srvId} RETURNING id, title, price, duration, description, status`
-      )
-      message += ', service suspended only'
-    }
     res.status(200).json({
-      user: deletedSrv.rows[0],
       message: message
     })
   } catch (error) {
@@ -336,6 +310,7 @@ const getServices = async (req, res) => {
     res.status(400).json({ error: error.message })
   }
 }
+
 const getDoctors = async (req, res) => {
   try {
     const doctors = await db.query(
@@ -349,7 +324,35 @@ const getDoctors = async (req, res) => {
     res.status(400).json({ error: error.message })
   }
 }
-const appByDoctor = async (req, res) => {}
+const appByDoctor = async (req, res) => {
+  try {
+    let date = ''
+    if (req.params.start) {
+      date = `WHERE a.appointmentdate BETWEEN '${req.params.start} 00:00:00' AND `
+      if (req.params.end) {
+        date += `'${req.params.end} 23:59:59'`
+      } else {
+        date += `'${req.params.start} 23:59:59'`
+      }
+    } else {
+      const today = new Date().toISOString().split('T')[0]
+      date = `WHERE a.appointmentdate BETWEEN '${today} 00:00:00' AND '${today} 23:59:59'`
+    }
+    date += ` AND a.doctorid=${req.params.id}`
+    const appointments =
+      await db.query(`SELECT a.id id, a.appointmentdate date, a.status status, s.title service, s.duration duration, s.description description, u.id docId, u.name doctor, s.duration duration, pu.id patientId, pu.name patientName FROM appointments a 
+        JOIN services s ON s.id = a.serviceid
+        JOIN users u ON u.id = a.doctorid
+        JOIN users pu ON pu.id = a.patientid ${date}`)
+    if (!appointments.rows.length) {
+      return res.status(200).json({ error: 'No appointments!' })
+    }
+    message = 'Appointments fetched successfully'
+    res.status(200).json({ appointments: appointments.rows, message: message })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
 
 module.exports = {
   index,
