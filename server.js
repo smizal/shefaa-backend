@@ -24,7 +24,6 @@ app.use(express.urlencoded({ extended: true }))
 // app.use(cors({ origin: 'http://localhost:5173' }))
 app.use(cors())
 // middlewares and routes
-const { verifyToken } = require('./middleware/jwtUtils')
 const authRoutes = require('./routes/auth.js')
 const frontRoutes = require('./routes/front.js')
 const adminRoutes = require('./routes/admin.js')
@@ -32,7 +31,8 @@ const userRoutes = require('./routes/users.js')
 const doctorRoutes = require('./routes/doctors.js')
 const servicesRoutes = require('./routes/services.js')
 const profileRoutes = require('./routes/profile.js')
-const { error404 } = require('./controllers/error.js')
+const appointmentRoutes = require('./routes/appointments.js')
+const { verifyToken } = require('./middleware/jwtUtils')
 const { isAuthorized } = require('./middleware/permission.js')
 
 // Proper Routes use
@@ -42,6 +42,7 @@ app.use('/profile', verifyToken, profileRoutes)
 app.use('/users', verifyToken, isAuthorized(['admin']), userRoutes)
 app.use('/doctors', verifyToken, isAuthorized(['admin']), doctorRoutes)
 app.use('/services', verifyToken, isAuthorized(['admin']), servicesRoutes)
+app.use('/appointments', verifyToken, appointmentRoutes)
 app.use('/', frontRoutes)
 
 app.listen(PORT, () => {

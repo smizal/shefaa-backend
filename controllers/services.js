@@ -25,11 +25,17 @@ const show = async (req, res) => {
     }
 
     const srvDoctors =
-      await db.query(`SELECT ds.id, ds.status, u.name FROM doctorsServices ds 
+      await db.query(`SELECT u.id, ds.status, u.name FROM doctorsServices ds 
       JOIN users u ON u.id = ds.doctorid
       WHERE serviceid=${req.params.id}`)
     message = 'Service details fetched successfully'
-    res.status(200).json({ service: service.rows, doctors: srvDoctors.rows })
+    res
+      .status(200)
+      .json({
+        service: service.rows[0],
+        doctors: srvDoctors.rows,
+        message: message
+      })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -37,6 +43,7 @@ const show = async (req, res) => {
 
 const create = async (req, res) => {
   try {
+    console.log(req.body)
     const newData = req.body
     if (!newData.title || !newData.price || !newData.duration) {
       return res.status(200).json({ error: 'Missing required fields.' })
@@ -44,7 +51,7 @@ const create = async (req, res) => {
 
     // check title
     const serviceExist = await db.query(
-      `SELECT id FROM services WHERE cpr='${newData.title}'`
+      `SELECT id FROM services WHERE title='${newData.title}'`
     )
     if (serviceExist.rows.length) {
       return res
@@ -86,7 +93,7 @@ const update = async (req, res) => {
 
     // check title
     const serviceExist = await db.query(
-      `SELECT id FROM services WHERE cpr='${newData.title}'`
+      `SELECT id FROM services WHERE title='${newData.title}' AND id!=${req.params.id}`
     )
     if (serviceExist.rows.length) {
       return res
@@ -113,6 +120,8 @@ const update = async (req, res) => {
 const deleting = async (req, res) => {
   try {
     srvId = req.params.id
+    console.log(srvId)
+
     const existService = await db.query(
       `SELECT id FROM services where id=${srvId}`
     )
@@ -126,6 +135,7 @@ const deleting = async (req, res) => {
     const appCount = await db.query(
       `SELECT COUNT(id) FROM appointments WHERE serviceid=${srvId}`
     )
+    console.log(appCount)
     if (appCount.rows[0].count > 0) {
       fineToDelete = false
       message = 'Service attached to registered appointments'
@@ -150,9 +160,9 @@ const deleting = async (req, res) => {
     } else {
       const updatedAt = new Date().toISOString()
       deletedSrv = await db.query(
-        `UPDATE service SET status='suspended', updatedat=${updatedAt} WHERE id=${srvId} RETURNING id, title, price, duration, description, status`
+        `UPDATE services SET status='suspended', updatedat='${updatedAt}' WHERE id=${srvId} RETURNING id, title, price, duration, description, status`
       )
-      message += 'service suspended only'
+      message += ', service suspended only'
     }
     res.status(200).json({
       user: deletedSrv.rows[0],
@@ -213,9 +223,9 @@ const addDoctor = async (req, res) => {
         ? 'All doctors attached successfully'
         : ' is/are already attached to the service!'
     const srvDoctors = await db.query(
-      `SELECT ds.id, ds.status, s.title FROM doctorsServices ds 
-      JOIN services s ON s.id = ds.serviceId
-      WHERE serviceId=${req.params.id}`
+      `SELECT u.id, ds.status, u.name FROM doctorsServices ds 
+      JOIN users u ON u.id = ds.doctorid
+      WHERE serviceid=${req.params.id}`
     )
     if (!srvDoctors.rows.length) {
       return res
