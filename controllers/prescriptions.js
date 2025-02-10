@@ -107,66 +107,19 @@ const show = async (req, res) => {
 const create = async (req, res) => {
   try {
     const postData = req.body
-    if (
-      !postData.name ||
-      !postData.cpr ||
-      !postData.phone ||
-      !postData.email ||
-      !postData.serviceId ||
-      !postData.doctorId ||
-      !postData.appointmentDate
-    ) {
+    if (!postData.caseHistory || !postData.Medication || !postData.icdId) {
       return res.status(200).json({ error: 'Missing required fields.' })
     }
-
-    const userExist = await db.query(
-      `SELECT id FROM users WHERE cpr='${postData.cpr}'`
-    )
-    let patientId = 0
-    const source = 'internal'
-
-    // Get patient ID
-    if (userExist.rows.length) {
-      patientId = userExist.rows[0].id
-    } else {
-      const hashedPassword = bcrypt.hashSync(postData.cpr, SALT)
-      const newUser =
-        await db.query(`INSERT INTO users (name, cpr, username, password, email, phone) VALUES (
-        '${postData.name}',
-        '${postData.cpr}',
-        '${postData.cpr}',
-        '${hashedPassword}',
-        '${postData.email}',
-        '${postData.phone}'
+    const pres =
+      await db.query(`INSERT INTO prescriptions (appointmentId, icdId, caseHistory, Medication) VALUES (
+        '${req.params.id}',
+        '${postData.icdId}',
+        '${postData.caseHistory}',
+        '${postData.Medication}'
         ) RETURNING id`)
-      if (newUser.rows.length) {
-        patientId = newUser.rows[0].id
-      } else {
-        res.status(200).json({ error: 'Error saving patient data' })
-      }
-    }
 
-    // Save Appointment Data
-    const newApp =
-      await db.query(`INSERT INTO appointments (patientId, serviceId, doctorId, appointmentDate, description) VALUES (
-        '${patientId}',
-        '${postData.serviceId}',
-        '${postData.doctorId}',
-        '${postData.appointmentDate}',
-        '${postData.description ? postData.description : ''}'
-        ) RETURNING id`)
-    if (!newApp.rows.length) {
-      return res.status(200).json({ error: 'Error saving appointment data.' })
-    }
-    const appointment = await db.query(
-      `SELECT a.id id, a.appointmentdate date, a.status status, s.title service, s.duration duration, s.description description, u.id docId, u.name doctor, s.duration duration, pu.id patientId, pu.name patientName FROM appointments a 
-        JOIN services s ON s.id = a.serviceid
-        JOIN users u ON u.id = a.doctorid
-        JOIN users pu ON pu.id = a.patientid
-        WHERE a.id=${newApp.rows[0].id}`
-    )
     res.status(201).json({
-      appointment: appointment.rows[0],
+      pres: pres.rows[0],
       message: 'Appointment request saved successfully'
     })
   } catch (error) {
