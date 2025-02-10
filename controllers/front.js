@@ -232,16 +232,25 @@ const getServices = async (req, res) => {
   }
 }
 
-const getDoctors = async (req, res) => {
+const getSrvDoctors = async (req, res) => {
   try {
-    let query = ''
-    if (req.params.srvId) {
-      query = ` AND ds.serviceId='${req.params.srvId}'`
-    }
     const doctors = await db.query(
       `SELECT u.id, u.name FROM users u
       JOIN doctorsServices ds ON u.id=ds.doctorId
-      WHERE u.status='active' AND ds.status='active' AND u.role='doctor' '${query}'`
+      WHERE u.status='active' AND ds.status='active' AND u.role='doctor' AND ds.serviceId='${req.params.srvId}'`
+    )
+    message = 'Doctors fetched successfully'
+    res.status(400).json({ doctors: doctors.rows, message })
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+}
+
+const getDoctors = async (req, res) => {
+  try {
+    const doctors = await db.query(
+      `SELECT u.id, u.name FROM users u
+      WHERE u.status='active' AND u.role='doctor'`
     )
     message = 'Doctors fetched successfully'
     res.status(400).json({ doctors: doctors.rows, message })
@@ -258,5 +267,6 @@ module.exports = {
   medicines,
   showInvoice,
   getServices,
-  getDoctors
+  getDoctors,
+  getSrvDoctors
 }
