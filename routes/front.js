@@ -7,7 +7,8 @@ const {
   medicines,
   showInvoice,
   getServices,
-  getDoctors
+  getDoctors,
+  getSrvDoctors
 } = require('../controllers/front.js')
 
 const { error404 } = require('../controllers/error.js')
@@ -19,8 +20,8 @@ const router = express.Router()
 router.post('/contact-us', contactUs)
 router.post('/get_appointment', saveAppointment)
 router.get('/get_services', getServices)
-router.get('/get_doctors/:srvId', getDoctors)
 router.get('/get_doctors', getDoctors)
+router.get('/get_doctors/:srvId', getSrvDoctors)
 router.get('/patient', verifyToken, dashboard)
 router.get('/patient/:id', verifyToken, show)
 router.get('/patient/medicine/:id', verifyToken, medicines)
