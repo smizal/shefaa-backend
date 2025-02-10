@@ -249,7 +249,7 @@ const getSrvDoctors = async (req, res) => {
 const getDoctors = async (req, res) => {
   try {
     const doctors = await db.query(
-      `SELECT u.id, u.name FROM users u
+      `SELECT u.id, u.name, u.photopath FROM users u
       WHERE u.status='active' AND u.role='doctor'`
     )
     message = 'Doctors fetched successfully'
