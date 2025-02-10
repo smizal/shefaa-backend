@@ -253,7 +253,7 @@ const getDoctors = async (req, res) => {
       WHERE u.status='active' AND u.role='doctor'`
     )
     message = 'Doctors fetched successfully'
-    res.status(400).json({ doctors: doctors.rows, message })
+    res.status(200).json({ doctors: doctors.rows, message })
   } catch (error) {
     res.status(400).json({ error: error.message })
   }
