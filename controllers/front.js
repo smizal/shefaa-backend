@@ -234,10 +234,14 @@ const getServices = async (req, res) => {
 
 const getDoctors = async (req, res) => {
   try {
+    let query = ''
+    if (req.params.srvId) {
+      query = ` AND ds.serviceId='${req.params.srvId}'`
+    }
     const doctors = await db.query(
       `SELECT u.id, u.name FROM users u
       JOIN doctorsServices ds ON u.id=ds.doctorId
-      WHERE u.status='active' AND ds.status='active' AND u.role='doctor' AND ds.serviceId='${req.params.srvId}'`
+      WHERE u.status='active' AND ds.status='active' AND u.role='doctor' '${query}'`
     )
     message = 'Doctors fetched successfully'
     res.status(400).json({ doctors: doctors.rows, message })
