@@ -226,7 +226,7 @@ const getServices = async (req, res) => {
       `SELECT id, title FROM services WHERE status='active'`
     )
     message = 'Services fetched successfully'
-    res.status(400).json({ services: services.rows, message })
+    res.status(200).json({ services: services.rows, message })
   } catch (error) {
     res.status(400).json({ error: error.message })
   }
