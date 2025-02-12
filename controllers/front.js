@@ -240,7 +240,7 @@ const getSrvDoctors = async (req, res) => {
       WHERE u.status='active' AND ds.status='active' AND u.role='doctor' AND ds.serviceId='${req.params.srvId}'`
     )
     message = 'Doctors fetched successfully'
-    res.status(400).json({ doctors: doctors.rows, message })
+    res.status(200).json({ doctors: doctors.rows, message })
   } catch (error) {
     res.status(400).json({ error: error.message })
   }
