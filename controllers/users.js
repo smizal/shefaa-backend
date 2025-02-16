@@ -272,7 +272,7 @@ const deleting = async (req, res) => {
     } else {
       const updatedAt = new Date().toISOString()
       deletedUser = await db.query(
-        `UPDATE users SET status='suspended', updatedat=${updatedAt} WHERE id=${userId} RETURNING id, name, photopath, cpr, username, email, phone, role, status, notes`
+        `UPDATE users SET status='suspended', updatedat='${updatedAt}' WHERE id=${userId} RETURNING id, name, photopath, cpr, username, email, phone, role, status, notes`
       )
       message += 'account suspended only'
     }

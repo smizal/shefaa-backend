@@ -28,46 +28,62 @@ const signUp = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    if (isSignedIn(req)) {
-      return res.status(200).json({ error: 'already logged in !' })
-    } else {
-      const { username, password } = req.body
-      if (!username || !password) {
-        return res.status(200).json({ error: 'Missing required fields.' })
-      }
-      const user = await db.query(
-        `SELECT id, name, role, phone, email, password, status FROM users WHERE username='${username}'`
-      )
-      if (!user.rows.length) {
-        return res
-          .status(200)
-          .json({ error: 'incorrect Username & Password combination.' })
-      }
-      const foundedUser = user.rows[0]
-      const matched = bcrypt.compareSync(password, foundedUser.password)
-      if (matched) {
-        if (foundedUser.status !== 'active') {
-          res.status(200).json({
-            error: `User status is (${user.status}), please contact the admin for more information.`
-          })
-        }
-        delete foundedUser.password
-        delete foundedUser.status
-        const token = signToken(foundedUser)
-        res.status(200).json({
-          user: foundedUser,
-          token,
-          message: 'You are Logged-in successfuly'
-        })
-      } else {
-        res
-          .status(200)
-          .json({ error: 'incorrect Username & Password combination.' })
-      }
+    // if (isSignedIn(req)) {
+    //   return res.status(200).json({ error: 'already logged in !' })
+    // } else {
+    const { username, password } = req.body
+    if (!username || !password) {
+      return res.status(200).json({ error: 'Missing required fields.' })
     }
+    const user = await db.query(
+      `SELECT id, name, role, phone, email, password, status FROM users WHERE username='${username}'`
+    )
+    if (!user.rows.length) {
+      return res
+        .status(200)
+        .json({ error: 'incorrect Username & Password combination.' })
+    }
+    const foundedUser = user.rows[0]
+    const matched = bcrypt.compareSync(password, foundedUser.password)
+    if (matched) {
+      if (foundedUser.status !== 'active') {
+        res.status(200).json({
+          error: `User status is (${user.status}), please contact the admin for more information.`
+        })
+      }
+      delete foundedUser.password
+      delete foundedUser.status
+      const token = signToken(foundedUser)
+      res.status(200).json({
+        user: foundedUser,
+        token,
+        message: 'You are Logged-in successfuly'
+      })
+    } else {
+      res
+        .status(200)
+        .json({ error: 'incorrect Username & Password combination.' })
+    }
+    // }
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
 }
 
-module.exports = { login, signUp }
+const LoggedinUser = (req, res) => {
+  try {
+    const logged = isSignedIn(req)
+    console.log('logged', logged)
+
+    if (logged) {
+      console.log('loggedUser -> req.loggedUser', req.loggedUser)
+
+      res.status(200).json({ user: req.loggedUser })
+    } else {
+      res.status(404).json(null)
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+module.exports = { login, signUp, LoggedinUser }
