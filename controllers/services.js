@@ -29,13 +29,11 @@ const show = async (req, res) => {
       JOIN users u ON u.id = ds.doctorid
       WHERE serviceid=${req.params.id}`)
     message = 'Service details fetched successfully'
-    res
-      .status(200)
-      .json({
-        service: service.rows[0],
-        doctors: srvDoctors.rows,
-        message: message
-      })
+    res.status(200).json({
+      service: service.rows[0],
+      doctors: srvDoctors.rows,
+      message: message
+    })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -106,6 +104,23 @@ const update = async (req, res) => {
     console.log(query)
 
     const service = await db.query(query)
+
+    for (const docId of newData.doctors) {
+      const exist = await db.query(
+        `SELECT id FROM doctorsServices WHERE serviceid=${req.params.id} AND doctorid=${docId}`
+      )
+
+      if (exist.rows.length > 0) {
+        message += message !== '' ? ', ' : 'Doctor(s) with id(s): '
+        message += `${docId}`
+        // message = 'Some doctors are already attached to the service!'
+      } else {
+        await db.query(
+          `INSERT INTO doctorsServices (doctorid, serviceid) VALUES (${docId},${req.params.id})`
+        )
+      }
+    }
+
     if (service.rows.length) {
       message = 'Service updated successfully'
       res.status(201).json({ service: service.rows[0], message: message })
@@ -175,7 +190,7 @@ const deleting = async (req, res) => {
 
 const getOtherDoctors = async (req, res) => {
   try {
-    const query = `SELECT id, name FROM users WHERE status='active' AND id NOT IN (SELECT ds.doctorid FROM doctorsServices ds JOIN services s ON s.id = ds.doctorid WHERE serviceid=${req.params.id})`
+    const query = `SELECT id, name FROM users WHERE status='active' AND id NOT IN (SELECT ds.doctorid FROM doctorsServices ds JOIN services s ON s.id = ds.doctorid WHERE serviceid=${req.params.id}) and role='doctor'`
     console.log(query)
 
     const srvDoctors = await db.query(query)

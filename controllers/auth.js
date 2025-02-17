@@ -73,11 +73,7 @@ const login = async (req, res) => {
 const LoggedinUser = (req, res) => {
   try {
     const logged = isSignedIn(req)
-    console.log('logged', logged)
-
     if (logged) {
-      console.log('loggedUser -> req.loggedUser', req.loggedUser)
-
       res.status(200).json({ user: req.loggedUser })
     } else {
       res.status(404).json(null)
