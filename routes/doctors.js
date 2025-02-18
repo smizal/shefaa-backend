@@ -5,6 +5,7 @@ const {
   show,
   create,
   deleting,
+  getServices,
   getOtherServices
 } = require('../controllers/doctors.js')
 const { error404 } = require('../controllers/error.js')
@@ -16,6 +17,7 @@ router.get('/:id', show)
 router.post('/:id', create)
 router.delete('/:id/:srvId', deleting)
 router.get('/otherServices/:id', getOtherServices)
+router.get('/services/:id', getServices)
 router.get('*', error404)
 router.post('*', error404)
 router.put('*', error404)

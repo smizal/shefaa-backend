@@ -19,10 +19,10 @@ const index = async (req, res) => {
     }
 
     const appointments =
-      await db.query(`SELECT a.id id, a.appointmentdate date, a.status status, s.title service, s.duration duration, s.description description, u.id docId, u.name doctor, s.duration duration, pu.id patientId, pu.name patientName FROM appointments a 
+      await db.query(`SELECT a.id id, a.appointmentdate date, a.status status, s.title service, s.id serviceId, s.duration duration, s.description description, u.id docId, u.name doctor, s.duration duration, pu.id patientId, pu.name patientName FROM appointments a 
         JOIN services s ON s.id = a.serviceid
         JOIN users u ON u.id = a.doctorid
-        JOIN users pu ON pu.id = a.patientid ${date}`)
+        JOIN users pu ON pu.id = a.patientid ${date} AND a.status != 'rejected'`)
     if (!appointments.rows.length) {
       return res.status(200).json({ error: 'No appointments!' })
     }
@@ -96,12 +96,13 @@ const create = async (req, res) => {
 
     // Save Appointment Data
     const newApp =
-      await db.query(`INSERT INTO appointments (patientId, serviceId, doctorId, appointmentDate, description) VALUES (
+      await db.query(`INSERT INTO appointments (patientId, serviceId, doctorId, appointmentDate, description, status) VALUES (
         '${patientId}',
         '${postData.serviceId}',
         '${postData.doctorId}',
         '${postData.appointmentDate}',
-        '${postData.description ? postData.description : ''}'
+        '${postData.description ? postData.description : ''}',
+        'approved'
         ) RETURNING id`)
     if (!newApp.rows.length) {
       return res.status(200).json({ error: 'Error saving appointment data.' })
@@ -123,6 +124,9 @@ const create = async (req, res) => {
 }
 
 const update = async (req, res) => {
+  console.log(req.body)
+  console.log(req.params.id)
+
   try {
     const status = await db.query(
       `SELECT status FROM appointments where id=${req.params.id}`
@@ -152,8 +156,51 @@ const update = async (req, res) => {
       first = false
     }
     query += `, updatedat='${updatedAt}' WHERE id=${req.params.id} RETURNING id`
-    console.log(query)
 
+    const updateApp = await db.query(query)
+    if (updateApp.rows.length) {
+      const appointment = await db.query(
+        `SELECT a.id id, a.appointmentdate date, a.status status, s.title service, s.duration duration, s.description description, u.id docId, u.name doctor, s.duration duration, pu.id patientId, pu.name patientName FROM appointments a 
+          JOIN services s ON s.id = a.serviceid
+          JOIN users u ON u.id = a.doctorid
+          JOIN users pu ON pu.id = a.patientid
+          WHERE a.id=${req.params.id}`
+      )
+      message = 'Appointment updated successfully'
+      res
+        .status(201)
+        .json({ appointment: appointment.rows[0], message: message })
+    } else {
+      res.status(200).json({ error: 'Error saving service data' })
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+const updateStatus = async (req, res) => {
+  try {
+    const status = await db.query(
+      `SELECT status FROM appointments where id=${req.params.id}`
+    )
+    if (!status.rows.length) {
+      return res.status(401).json({ error: 'Invalid Data' })
+    } else if (
+      status.rows[0].status !== 'new' &&
+      status.rows[0].status !== 'approved'
+    ) {
+      return res.status(401).json({
+        error: `Cannot change appointment status. this appointment status is ${status.rows[0].status}`
+      })
+    }
+    let query = ''
+    const newStatus = req.body.status
+    if (newStatus !== 'delete') {
+      const updatedAt = new Date().toISOString()
+      query = `UPDATE appointments SET status='${newStatus}', updatedat='${updatedAt}' WHERE id=${req.params.id} RETURNING id`
+    } else {
+      query = `DELETE FROM appointments WHERE id=${req.params.id} RETURNING id`
+    }
     const updateApp = await db.query(query)
     if (updateApp.rows.length) {
       const appointment = await db.query(
@@ -362,5 +409,6 @@ module.exports = {
   deleting,
   appByDoctor,
   getServices,
-  getDoctors
+  getDoctors,
+  updateStatus
 }

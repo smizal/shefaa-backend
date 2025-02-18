@@ -111,13 +111,7 @@ const update = async (req, res) => {
       return res.status(401).json({ error: 'Invalid Data' })
     }
     const newUser = req.body
-    if (
-      !newUser.name ||
-      !newUser.username ||
-      !newUser.cpr ||
-      !newUser.email ||
-      !newUser.role
-    ) {
+    if (!newUser.name || !newUser.username || !newUser.cpr || !newUser.email) {
       return res.status(200).json({ error: 'Missing required fields.' })
     }
 
@@ -156,22 +150,19 @@ const update = async (req, res) => {
     if (req.file) {
       newUser.photoPath = `, photopath='${req.file.path}'`
       newUser.photoId = `, photoid='${req.file.filename}'`
-    } else {
-      newUser.photoPath = ''
-      newUser.photoId = ''
-    }
-
-    if (!newUser.phone) {
-      newUser.phone = ''
-    }
-
-    if (!newUser.notes) {
-      newUser.notes = ''
     }
 
     const updatedAt = new Date().toISOString()
-    const query = `UPDATE users SET name='${newUser.name}', cpr='${newUser.cpr}', username='${newUser.username}', email='${newUser.email}', phone='${newUser.phone}', role='${newUser.role}', notes='${newUser.notes}', updatedat='${updatedAt}'${newUser.password}${newUser.photoPath}${newUser.photoId} WHERE id=${req.params.id} RETURNING id, name, photopath, cpr, username, email, phone, role, status, notes`
-    console.log(query)
+    let query = `UPDATE users SET `
+    let first = true
+    for (const [key, value] of Object.entries(newUser)) {
+      if (!first) {
+        query += ', '
+      }
+      query += `${key}='${value}'`
+      first = false
+    }
+    query += `, updatedat='${updatedAt}' WHERE id=${req.params.id} RETURNING id, name, photopath, cpr, username, email, phone, role, status, notes`
 
     let message = ''
 
@@ -209,6 +200,7 @@ const deleting = async (req, res) => {
     const appCount = await db.query(
       `SELECT COUNT(id) FROM appointments WHERE patientid=${userId}`
     )
+
     if (appCount.rows[0].count > 0) {
       fineToDelete = false
       message = 'User has registered appointments'
