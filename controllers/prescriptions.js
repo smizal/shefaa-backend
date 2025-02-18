@@ -33,6 +33,16 @@ const index = async (req, res) => {
   }
 }
 
+const getLabs = async (req, res) => {
+  try {
+    const Labs = await db.query(`SELECT id id, title name FROM labtests`)
+    message = 'Labs fetched successfully'
+    res.status(200).json({ Labs: Labs.rows, message: message })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
 const getIcd = async (req, res) => {
   try {
     const icd = await db.query(`SELECT id id, name name FROM icd`)
@@ -61,7 +71,7 @@ const show = async (req, res) => {
     let labRep = []
     let medReq = []
     let medRep = []
-    let dc = []
+    let pres = []
     if (
       app.status === 'new' ||
       app.status === 'approved' ||
@@ -378,5 +388,6 @@ module.exports = {
   appByDoctor,
   getServices,
   getDoctors,
-  getIcd
+  getIcd,
+  getLabs
 }
