@@ -17,18 +17,23 @@ const index = async (req, res) => {
 
 const show = async (req, res) => {
   try {
+    const doctor = await db.query(
+      `SELECT id, name, photopath, cpr, email, phone, role, status FROM users WHERE role='doctor' AND id=${req.params.id}`
+    )
     const docServices = await db.query(
       `SELECT ds.id, ds.status, s.title FROM doctorsServices ds 
       JOIN services s ON s.id = ds.serviceId
       WHERE doctorId=${req.params.id}`
     )
-    if (!docServices.rows.length) {
+    /* if (!docServices.rows.length) {
       return res
         .status(404)
         .json({ error: 'No attached services for this doctor.' })
-    }
+    } */
     message = 'Doctor services fetched successfully'
-    res.status(200).json({ docServices: docServices.rows[0], message: message })
+    res
+      .status(200)
+      .json({ doctor: doctor, services: docServices.rows, message: message })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -111,6 +116,26 @@ const deleting = async (req, res) => {
   }
 }
 
+const getServices = async (req, res) => {
+  try {
+    const query = `SELECT s.id, s.title FROM services s 
+    JOIN doctorsServices ds ON s.id = ds.serviceId
+    WHERE s.status='active' AND ds.status='active' AND ds.doctorId=${req.params.id}`
+    console.log(query)
+
+    const services = await db.query(query)
+    // if (!services.rows.length) {
+    //   return res
+    //     .status(404)
+    //     .json({ error: 'No services attached for this doctor.' })
+    // }
+    message = 'Other services fetched successfully'
+    res.status(200).json({ services: services.rows, message: message })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
 const getOtherServices = async (req, res) => {
   try {
     const query = `SELECT id, title FROM services WHERE status='active' AND id NOT IN (SELECT ds.serviceid FROM doctorsServices ds JOIN services s ON s.id = ds.serviceId WHERE doctorId=${req.params.id})`
@@ -131,4 +156,11 @@ const getOtherServices = async (req, res) => {
   }
 }
 
-module.exports = { index, show, create, deleting, getOtherServices }
+module.exports = {
+  index,
+  show,
+  create,
+  deleting,
+  getServices,
+  getOtherServices
+}

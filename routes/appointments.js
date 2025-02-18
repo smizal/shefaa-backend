@@ -9,7 +9,8 @@ const {
   deleting,
   getServices,
   getDoctors,
-  appByDoctor
+  appByDoctor,
+  updateStatus
 } = require('../controllers/appointments.js')
 const { error404 } = require('../controllers/error.js')
 
@@ -47,6 +48,7 @@ router.get(
 router.get('/:id', isAuthorized(['admin', 'doctor', 'receptionist']), show)
 router.post('/', isAuthorized(['admin', 'receptionist']), create)
 router.put('/:id', isAuthorized(['admin', 'receptionist']), update)
+router.put('/status/:id', isAuthorized(['admin', 'receptionist']), updateStatus)
 router.delete('/:id', isAuthorized(['admin', 'receptionist']), deleting)
 
 router.get('*', error404)
