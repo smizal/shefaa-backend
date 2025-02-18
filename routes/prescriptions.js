@@ -9,13 +9,15 @@ const {
   deleting,
   getServices,
   getDoctors,
-  appByDoctor
+  appByDoctor,
+  getIcd
 } = require('../controllers/prescriptions.js')
 const { error404 } = require('../controllers/error.js')
 
 const router = express.Router()
 
 router.get('/:id', show)
+router.get('/icd', getIcd)
 router.post('/', create)
 router.put('/:id', update)
 router.delete('/:id', isAuthorized(['admin']), deleting)
