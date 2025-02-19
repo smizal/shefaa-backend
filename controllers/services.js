@@ -194,11 +194,11 @@ const getOtherDoctors = async (req, res) => {
     console.log(query)
 
     const srvDoctors = await db.query(query)
-    if (!srvDoctors.rows.length) {
+    /* if (!srvDoctors.rows.length) {
       return res
         .status(404)
         .json({ error: 'No new services to be attached for this doctor.' })
-    }
+    } */
     message = 'Service doctors fetched successfully'
     res.status(200).json({ srvDoctors: srvDoctors.rows, message: message })
   } catch (error) {

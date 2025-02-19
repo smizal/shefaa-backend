@@ -11,7 +11,10 @@ const {
   getDoctors,
   appByDoctor,
   getIcd,
-  getLabs
+  getLabs,
+  addLabTest,
+  getMeds,
+  addMed
 } = require('../controllers/prescriptions.js')
 const { error404 } = require('../controllers/error.js')
 
@@ -19,8 +22,11 @@ const router = express.Router()
 
 router.get('/icd', getIcd)
 router.get('/labs', getLabs)
+router.get('/meds', getMeds)
 router.get('/:id', show)
-router.post('/', create)
+router.post('/addTest/:id', addLabTest)
+router.post('/addMed/:id', addMed)
+router.post('/:id', create)
 router.put('/:id', update)
 router.delete('/:id', isAuthorized(['admin']), deleting)
 

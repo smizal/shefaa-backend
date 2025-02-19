@@ -142,11 +142,11 @@ const getOtherServices = async (req, res) => {
     console.log(query)
 
     const otherServices = await db.query(query)
-    if (!otherServices.rows.length) {
+    /* if (!otherServices.rows.length) {
       return res
         .status(404)
         .json({ error: 'No new services to be attached for this doctor.' })
-    }
+    } */
     message = 'Other services fetched successfully'
     res
       .status(200)
