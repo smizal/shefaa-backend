@@ -35,9 +35,25 @@ const index = async (req, res) => {
 
 const getLabs = async (req, res) => {
   try {
-    const Labs = await db.query(`SELECT id id, title name FROM labtests`)
+    console.log(req.query.q)
+    const Labs = await db.query(
+      `SELECT id id, title name FROM labtests WHERE title ilike '%${req.query.q}%'`
+    )
     message = 'Labs fetched successfully'
-    res.status(200).json({ Labs: Labs.rows, message: message })
+    res.status(200).json({ labs: Labs.rows, message: message })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+const getMeds = async (req, res) => {
+  try {
+    console.log(req.query.q)
+    const meds = await db.query(
+      `SELECT id, name, pharmForm form, roa FROM medicines WHERE name ILIKE '%${req.query.q}%' OR activeSubs ILIKE '%${req.query.q}%'`
+    )
+    message = 'Labs fetched successfully'
+    res.status(200).json({ meds: meds.rows, message: message })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -45,7 +61,9 @@ const getLabs = async (req, res) => {
 
 const getIcd = async (req, res) => {
   try {
-    const icd = await db.query(`SELECT id id, name name FROM icd`)
+    const icd = await db.query(
+      `SELECT id id, name name FROM icd WHERE name ilike '%${req.query.q}%'`
+    )
     message = 'ICD fetched successfully'
     res.status(200).json({ icd: icd.rows, message: message })
   } catch (error) {
@@ -83,11 +101,11 @@ const show = async (req, res) => {
       )
     } else {
       labReq = await db.query(
-        `SELECT lr.id lrid, lt.id ltid, lt.title FROM labrequests lr JOIN labtests lt ON lt.id=lr.diagnosticId WHERE lr.status='new' AND lr.appointmentid=${appId}`
+        `SELECT lr.id lrid, lt.id ltid, lt.title name FROM labrequests lr JOIN labtests lt ON lt.id=lr.diagnosticId WHERE lr.status='new' AND lr.appointmentid=${appId}`
       )
 
       labRep = await db.query(
-        `SELECT lr.id lrid, lr.resultPath, lr.resultId, lr.notes, lt.id ltid, lt.title, u.name FROM labrequests lr 
+        `SELECT lr.id lrid, lr.resultPath, lr.resultId, lr.notes, lt.id ltid, lt.title name, u.name reporter FROM labrequests lr 
         JOIN labtests lt ON lt.id=lr.diagnosticId 
         JOIN users u on u.id = lr.reporterid
         WHERE lr.status !='new' AND lr.appointmentid=${appId}`
@@ -115,7 +133,7 @@ const show = async (req, res) => {
       labReq: labReq.rows,
       labRep: labRep.rows,
       medReq: medReq.rows,
-      medRep: medReq.rows,
+      medRep: medRep.rows,
       pres: pres.rows,
       message: message
     })
@@ -130,14 +148,20 @@ const create = async (req, res) => {
     if (!postData.caseHistory || !postData.Medication || !postData.icdId) {
       return res.status(200).json({ error: 'Missing required fields.' })
     }
-    const pres =
-      await db.query(`INSERT INTO prescriptions (appointmentId, icdId, caseHistory, Medication) VALUES (
-        '${req.params.id}',
-        '${postData.icdId}',
+    const query = `INSERT INTO prescriptions (appointmentId, icdId, caseHistory, Medication) VALUES (
+        ${req.params.id},
+        ${postData.icdId},
         '${postData.caseHistory}',
         '${postData.Medication}'
-        ) RETURNING id`)
+        ) RETURNING id`
+    console.log(query)
 
+    const pres = await db.query(query)
+
+    const appStatus = db.query(
+      `UPDATE appointments SET status='complete' WHERE id=${req.params.id}`
+    )
+    console.log(appStatus)
     res.status(201).json({
       pres: pres.rows[0],
       message: 'Appointment request saved successfully'
@@ -379,6 +403,37 @@ const appByDoctor = async (req, res) => {
   }
 }
 
+const addLabTest = async (req, res) => {
+  try {
+    const appId = req.params.id
+    const labTestId = req.body.testId
+    const data = await db.query(
+      `INSERT INTO labrequests (appointmentId, diagnosticId, reporterId) VALUES (${appId},${labTestId}, 1) RETURNING id`
+    )
+    message = 'Lab Test Added successfully'
+    res.status(200).json({ lapRequest: data.rows, message: message })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+const addMed = async (req, res) => {
+  try {
+    console.log(req.body)
+    const appId = req.params.id
+    const medicineId = req.body.medicineId
+    const period = req.body.period
+    const dosage = req.body.dosage
+    const data = await db.query(
+      `INSERT INTO medicinesRequests (appointmentId, medicineId, period, dosage, pharmaciestId) VALUES (${appId},${medicineId},'${period}','${dosage}', 1) RETURNING id`
+    )
+    message = 'Med Added successfully'
+    res.status(200).json({ med: data.rows[0], message: message })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
 module.exports = {
   index,
   show,
@@ -389,5 +444,8 @@ module.exports = {
   getServices,
   getDoctors,
   getIcd,
-  getLabs
+  getLabs,
+  addLabTest,
+  getMeds,
+  addMed
 }
