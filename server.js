@@ -33,6 +33,7 @@ const servicesRoutes = require('./routes/services.js')
 const profileRoutes = require('./routes/profile.js')
 const appointmentRoutes = require('./routes/appointments.js')
 const presRoutes = require('./routes/prescriptions.js')
+const invRoutes = require('./routes/invoices.js')
 const { verifyToken } = require('./middleware/jwtUtils')
 const { isAuthorized } = require('./middleware/permission.js')
 
@@ -43,6 +44,12 @@ app.use('/profile', verifyToken, profileRoutes)
 app.use('/users', verifyToken, isAuthorized(['admin']), userRoutes)
 app.use('/doctors', verifyToken, isAuthorized(['admin']), doctorRoutes)
 app.use('/services', verifyToken, isAuthorized(['admin']), servicesRoutes)
+app.use(
+  '/invoices',
+  verifyToken,
+  isAuthorized(['admin', 'accountant']),
+  invRoutes
+)
 app.use(
   '/prescriptions',
   verifyToken,
