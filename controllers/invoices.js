@@ -65,14 +65,16 @@ const show = async (req, res) => {
         JOIN medicinesrequests mr ON m.id = mr.medicineId
         WHERE mr.appointmentId=${req.params.id}`)
 
-      const data = `{appointment:${JSON.stringify(
-        appointment.rows[0]
-      )}, labs:${JSON.stringify(labs.rows)}, medicines:${JSON.stringify(
-        medicines.rows
-      )}}`
+      const data = {
+        appointment: JSON.stringify(appointment.rows[0]),
+        labs: JSON.stringify(labs.rows),
+        medicines: JSON.stringify(medicines.rows)
+      }
       console.log(data)
       const invoice = await db.query(
-        `INSERT INTO invoices (appointmentId,issuerId,data,amount) VALUES (${req.params.id}, 1, '${data}', 0.0) RETURNING id, data, status`
+        `INSERT INTO invoices (appointmentId,issuerId,data,amount) VALUES (${
+          req.params.id
+        }, 1, '${JSON.stringify(data)}', 0.0) RETURNING id, data, status`
       )
       console.log(invoice)
       message = 'Appointment details fetched successfully'
